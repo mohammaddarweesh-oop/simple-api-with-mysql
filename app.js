@@ -3,9 +3,69 @@ const bodyParser = require("body-parser");
 const db = require("./config/db");
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
+
+/**
+ * Searches students based on query parameters.
+ * @route GET /students/search
+ * @param {string} [req.query.name] - (Optional) Search for students by name (partial match).
+ * @param {string} [req.query.grade] - (Optional) Search for students by grade.
+ * @param {number} [req.query.minAge] - (Optional) Minimum age of students.
+ * @param {number} [req.query.maxAge] - (Optional) Maximum age of students.
+ * @returns {Object} 200 - List of matching students or a message if no students are found.
+ * @returns {Object} 400 - Error message if no search criteria are provided.
+ * @returns {Object} 500 - Error message if a database error occurs.
+ */
+
+app.get("/students/search", (req, res) => {
+  const { name, grade, minAge, maxAge } = req.query;
+  let query = "SELECT * FROM students WHERE 1=1";
+  const params = [];
+
+  if (name) {
+    query += " AND name like ?";
+    params.push(`%${name}%`);
+  }
+
+  if (grade) {
+    query += " And grade = ?";
+    params.push(`${grade}`);
+  }
+
+  if (minAge) {
+    query += " And age >= ?";
+    params.push(`${minAge}`);
+  }
+
+  if (maxAge) {
+    query += " And age <= ?";
+    params.push(`${maxAge}`);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        message: "خطأ في قاعدة البيانات",
+        error: err,
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(200).json({
+        // 200 وليس 404
+        message: "لم يتم العثور على طلاب بهذه المعايير",
+        criteria: req.query,
+      });
+    }
+
+    res.status(200).json({
+      message: "تم العثور على النتائج",
+      students: results,
+    });
+  });
+});
 
 /**
  * Adds a new student to the database.
@@ -33,12 +93,10 @@ app.post("/students", (req, res) => {
         .status(500)
         .json({ message: "Error adding student", error: err });
     }
-    res
-      .status(201)
-      .json({
-        message: "Student added successfully",
-        studentId: result.insertId,
-      });
+    res.status(201).json({
+      message: "Student added successfully",
+      studentId: result.insertId,
+    });
   });
 });
 
@@ -175,12 +233,10 @@ app.delete("/students/:id", (req, res) => {
     if (err) {
       return res.status(500).json({ message: "Server error" });
     }
-    res
-      .status(204)
-      .json({
-        message: "Student deleted successfully",
-        studentDeleted: result,
-      });
+    res.status(204).json({
+      message: "Student deleted successfully",
+      studentDeleted: result,
+    });
   });
 });
 

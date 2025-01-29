@@ -1,7 +1,8 @@
 const mysql = require("mysql2");
 require("dotenv").config();
+
 const db = mysql.createConnection({
-  host: "localhost",
+  host: "127.0.0.1",
   user: "root",
   password: process.env.PASSWORD_DB,
   database: "school",
@@ -9,10 +10,10 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error("خطأ في الاتصال بقاعدة البيانات:", err);
+    console.error("Error With Connect To Database", err);
     return;
   }
-  console.log("تم الاتصال بنجاح بقاعدة البيانات MySQL");
+  console.log("Connection Successfully MySQL");
 });
 
 module.exports = db;
